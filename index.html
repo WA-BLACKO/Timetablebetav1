@@ -1,10 +1,11 @@
-<html>
+<!doctype html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Build a personal Sri Lankan A/L study timetable by stream and subjects.">
   <title>A/L Timetable Builder</title>
-  <link rel="stylesheet" href="css.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -99,8 +100,8 @@
         <label>Period title<input id="sessionTitle" maxlength="60" placeholder="e.g. Theory class" required></label>
         <div class="form-row">
           <label>Day<select id="sessionDay" required></select></label>
-          <label>Start time<input id="sessionStart" type="time" min="05:00" max="23:45" step="900" required></label>
-          <label>End time<input id="sessionEnd" type="time" min="05:15" max="23:59" step="900" required></label>
+          <label>Start time<input id="sessionStart" type="time" min="00:00" max="23:45" step="900" required></label>
+          <label>End time<input id="sessionEnd" type="time" min="00:15" max="23:59" step="900" required></label>
         </div>
         <label>Notes<textarea id="sessionNotes" rows="4" maxlength="240" placeholder="Teacher, location, lesson, homework..."></textarea></label>
         <p class="form-error" id="sessionError" role="alert"></p>
@@ -115,6 +116,6 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="js.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
