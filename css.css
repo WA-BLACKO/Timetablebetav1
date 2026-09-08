@@ -164,3 +164,21 @@ textarea { resize: vertical; line-height: 1.45; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+
+.developer-credit {
+    position: fixed;
+    right: 12px;
+    bottom: 8px;
+    z-index: 9999;
+
+    color: #a8a8a8;
+    font-size: 10px;
+    font-family: Arial, sans-serif;
+    letter-spacing: 0.3px;
+    opacity: 0.9;
+
+    padding: 4px 7px;
+    border-radius: 6px;
+    background: rgba(7, 16, 29, 0.55);
+    backdrop-filter: blur(5px);
+}
