@@ -423,3 +423,117 @@ if (profile?.stream && Array.isArray(profile.subjects) && profile.subjects.lengt
   profile = null;
   openSetup();
 }
+
+const notificationButton =
+    document.querySelector("#enableNotificationsBtn");
+
+// Ask permission only after the user clicks the button
+notificationButton.addEventListener("click", async () => {
+    if (!("Notification" in window)) {
+        showToast("Your browser does not support notifications");
+        return;
+    }
+
+    const permission = await Notification.requestPermission();
+
+    if (permission === "granted") {
+        notificationButton.textContent = "🔔 Reminders enabled";
+
+        sendReminder(
+            "Reminders enabled",
+            "You will receive timetable notifications."
+        );
+    } else {
+        showToast("Notification permission was not allowed");
+    }
+});
+
+function sendReminder(title, message, tag = "") {
+    if (
+        "Notification" in window &&
+        Notification.permission === "granted"
+    ) {
+        new Notification(title, {
+            body: message,
+            tag: tag
+        });
+    }
+}
+
+function checkPeriodReminders() {
+    if (
+        !("Notification" in window) ||
+        Notification.permission !== "granted"
+    ) {
+        return;
+    }
+
+    const now = new Date();
+
+    // Converts Sunday=0 into Monday=0
+    const today = (now.getDay() + 6) % 7;
+
+    const currentMinutes =
+        now.getHours() * 60 + now.getMinutes();
+
+    const dateKey = now.toISOString().slice(0, 10);
+
+    sessions.forEach(session => {
+        // Only check periods scheduled for today
+        if (session.day !== today) return;
+
+        const startMinutes = timeToMinutes(session.start);
+        const endMinutes = timeToMinutes(session.end);
+        const minutesUntilStart = startMinutes - currentMinutes;
+
+        const startKey =
+            `reminder-start-${dateKey}-${session.id}`;
+
+        const missedKey =
+            `reminder-missed-${dateKey}-${session.id}`;
+
+        // Five-minute reminder
+        if (
+            minutesUntilStart > 0 &&
+            minutesUntilStart <= 5 &&
+            !localStorage.getItem(startKey)
+        ) {
+            sendReminder(
+                "Period starting soon",
+                `${session.title} starts in ${minutesUntilStart} minute(s).`,
+                startKey
+            );
+
+            localStorage.setItem(startKey, "sent");
+        }
+
+        // Period ended but was not completed
+        if (
+            currentMinutes > endMinutes &&
+            !session.completed &&
+            !localStorage.getItem(missedKey)
+        ) {
+            sendReminder(
+                "Period not completed",
+                `You didn't mark "${session.title}" as completed.`,
+                missedKey
+            );
+
+            localStorage.setItem(missedKey, "sent");
+        }
+    });
+}
+
+// Check immediately when the website loads
+checkPeriodReminders();
+
+// Check again every 30 seconds
+setInterval(checkPeriodReminders, 30000);
+
+// Update button when permission already exists
+if (
+    "Notification" in window &&
+    Notification.permission === "granted"
+) {
+    notificationButton.textContent = "🔔 Reminders enabled";
+}
