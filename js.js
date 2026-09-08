@@ -55,7 +55,7 @@ const STREAMS = {
 
 const SUBJECT_COLORS = ["#4f8cff", "#9b6cff", "#2dd4a7", "#ff9e64", "#ef6fff", "#22c6e8"];
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const START_HOUR = 6;
+const START_HOUR = 0;
 const END_HOUR = 24;
 const STORAGE_PROFILE = "alTimetableProfileV1";
 const STORAGE_SESSIONS = "alTimetableSessionsV1";
@@ -346,7 +346,7 @@ function saveSession(event) {
     return;
   }
   if (timeToMinutes(start) < START_HOUR * 60 || timeToMinutes(end) > END_HOUR * 60) {
-    $("#sessionError").textContent = "Choose a time between 6:00 AM and midnight.";
+    $("#sessionError").textContent = "Choose a time between 12:00 AM and 11:59 PM.";
     return;
   }
   const data = {
