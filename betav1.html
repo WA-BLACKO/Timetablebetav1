@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Build a personal Sri Lankan A/L study timetable by stream and subjects.">
+  <title>A/L Timetable Builder</title>
+  <link rel="stylesheet" href="css.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <main class="app-shell" id="app" hidden>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">MY STUDY WEEK</p>
+        <h1>A/L Timetable Builder</h1>
+        <p class="subtitle" id="profileSummary">Build a week that works for you.</p>
+      </div>
+      <div class="top-actions">
+        <button class="button secondary" id="editSubjectsBtn" type="button">Edit subjects</button>
+        <button class="button primary" id="addSessionBtn" type="button">+ Add period</button>
+      </div>
+    </header>
+
+    <section class="stats" aria-label="Timetable statistics">
+      <article class="stat-card">
+        <span class="stat-icon">▦</span>
+        <div><strong id="totalPeriods">0</strong><small>Periods this week</small></div>
+      </article>
+      <article class="stat-card">
+        <span class="stat-icon">✓</span>
+        <div><strong id="completedPeriods">0</strong><small>Completed periods</small></div>
+      </article>
+      <article class="stat-card progress-card">
+        <div class="progress-copy"><strong id="progressPercent">0%</strong><small>Weekly progress</small></div>
+        <div class="progress-track"><span id="progressBar"></span></div>
+      </article>
+    </section>
+
+    <section class="subject-panel">
+      <div class="section-heading">
+        <div>
+          <h2>Your subjects</h2>
+          <p>Drag a subject onto the timetable, or tap it to add a custom period.</p>
+        </div>
+        <button class="text-button" id="resetAttendanceBtn" type="button">Reset completion</button>
+      </div>
+      <div class="subject-list" id="subjectList"></div>
+    </section>
+
+    <section class="timetable-panel">
+      <div class="section-heading timetable-heading">
+        <div>
+          <h2>Weekly timetable</h2>
+          <p>Drag periods to move them. Tap a period to edit its time or notes.</p>
+        </div>
+        <div class="legend"><span></span> Drop zone</div>
+      </div>
+      <div class="table-scroll">
+        <div class="timetable" id="timetable" aria-label="Weekly timetable"></div>
+      </div>
+    </section>
+  </main>
+
+  <section class="setup-screen" id="setupScreen" aria-labelledby="setupTitle">
+    <div class="setup-card">
+      <div class="setup-brand">AL</div>
+      <p class="eyebrow">PERSONAL SETUP</p>
+      <h1 id="setupTitle">Choose your A/L stream</h1>
+      <p class="setup-intro">Select your stream first. We will then show the correct subject baskets.</p>
+
+      <div class="stream-grid" id="streamGrid" role="radiogroup" aria-label="A/L streams"></div>
+
+      <form id="subjectForm" hidden>
+        <div class="selection-head">
+          <div>
+            <p class="eyebrow">STEP 2</p>
+            <h2 id="basketTitle">Choose your subjects</h2>
+          </div>
+          <button class="text-button" id="changeStreamBtn" type="button">Change stream</button>
+        </div>
+        <div class="basket-list" id="basketList"></div>
+        <p class="form-error" id="setupError" role="alert"></p>
+        <button class="button primary wide" type="submit">Create my timetable</button>
+      </form>
+    </div>
+  </section>
+
+  <div class="modal" id="sessionModal" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <div><p class="eyebrow">STUDY PERIOD</p><h2 id="modalTitle">Add a period</h2></div>
+        <button class="icon-button" type="button" data-close-modal aria-label="Close">×</button>
+      </div>
+      <form id="sessionForm">
+        <label>Subject<select id="sessionSubject" required></select></label>
+        <label>Period title<input id="sessionTitle" maxlength="60" placeholder="e.g. Theory class" required></label>
+        <div class="form-row">
+          <label>Day<select id="sessionDay" required></select></label>
+          <label>Start time<input id="sessionStart" type="time" min="05:00" max="23:45" step="900" required></label>
+          <label>End time<input id="sessionEnd" type="time" min="05:15" max="23:59" step="900" required></label>
+        </div>
+        <label>Notes<textarea id="sessionNotes" rows="4" maxlength="240" placeholder="Teacher, location, lesson, homework..."></textarea></label>
+        <p class="form-error" id="sessionError" role="alert"></p>
+        <div class="modal-actions">
+          <button class="button danger" id="deleteSessionBtn" type="button" hidden>Delete</button>
+          <span class="action-spacer"></span>
+          <button class="button secondary" type="button" data-close-modal>Cancel</button>
+          <button class="button primary" type="submit">Save period</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="js.js"></script>
+</body>
+</html>
