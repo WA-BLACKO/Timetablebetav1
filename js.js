@@ -280,7 +280,17 @@ function renderSessions() {
     card.querySelector(".complete-button").addEventListener("click", event => {
       event.stopPropagation();
       item.completed = !item.completed;
-      saveAll(); renderSessions(); updateStats();
+
+const periodDuration =
+    timeToMinutes(item.end) - timeToMinutes(item.start);
+
+if (item.completed && periodDuration > 120) {
+    showMotivationGreeting(item);
+}
+
+saveAll();
+renderSessions();
+updateStats();
     });
     card.addEventListener("dragstart", event => {
       event.dataTransfer.setData("application/x-session", item.id);
@@ -472,3 +482,67 @@ document.addEventListener("DOMContentLoaded", () => {
             "🔔 Reminders enabled";
     }
 });
+
+function showMotivationGreeting(session) {
+    const messages = [
+        "Excellent work! You completed a powerful study session.",
+        "Amazing focus! Keep building that momentum.",
+        "Great job! Your hard work is paying off.",
+        "Long session completed! Be proud of your progress.",
+        "You stayed focused and finished strong!"
+    ];
+
+    const randomMessage =
+        messages[Math.floor(Math.random() * messages.length)];
+
+    // Remove an older popup
+    document.querySelector(".motivation-popup")?.remove();
+
+    const popup = document.createElement("div");
+    popup.className = "motivation-popup";
+
+    popup.innerHTML = `
+        <button class="motivation-close" type="button">×</button>
+
+        <div class="motivation-icon">🏆</div>
+
+        <div class="motivation-content">
+            <strong>Study goal completed!</strong>
+
+            <p>${randomMessage}</p>
+
+            <small>
+                ${escapeHtml(session.title)} ·
+                ${formatTime(session.start)}–${formatTime(session.end)}
+            </small>
+        </div>
+
+        <div class="motivation-progress"></div>
+    `;
+
+    document.body.appendChild(popup);
+
+    requestAnimationFrame(() => {
+        popup.classList.add("motivation-show");
+    });
+
+    popup
+        .querySelector(".motivation-close")
+        .addEventListener("click", () => {
+            closeMotivationPopup(popup);
+        });
+
+    // Automatically close after seven seconds
+    setTimeout(() => {
+        closeMotivationPopup(popup);
+    }, 7000);
+}
+
+function closeMotivationPopup(popup) {
+    if (!popup || !popup.isConnected) return;
+
+    popup.classList.remove("motivation-show");
+    popup.classList.add("motivation-hide");
+
+    setTimeout(() => popup.remove(), 400);
+} 
