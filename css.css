@@ -74,7 +74,7 @@ h2 { margin-bottom: 6px; font-size: 1.15rem; letter-spacing: -.02em; }
 .legend { color: var(--muted); font-size: .8rem; white-space: nowrap; }
 .legend span { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 12px var(--blue); }
 .table-scroll { overflow: auto; border-top: 1px solid var(--line); }
-.timetable { min-width: 1100px; display: grid; grid-template-columns: var(--time-width) repeat(7, minmax(140px, 1fr)); grid-template-rows: 58px repeat(18, var(--hour-height)); position: relative; }
+.timetable { min-width: 1100px; display: grid; grid-template-columns: var(--time-width) repeat(7, minmax(140px, 1fr)); grid-template-rows: 58px repeat(24, var(--hour-height)); position: relative; }
 .corner, .day-head { position: sticky; top: 0; z-index: 8; display: grid; place-items: center; background: rgba(13, 27, 47, .97); border-bottom: 1px solid var(--line); }
 .corner { left: 0; z-index: 10; border-right: 1px solid var(--line); color: var(--muted); font-size: .72rem; }
 .day-head { border-right: 1px solid var(--line); font-size: .88rem; }
