@@ -468,6 +468,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: "Your timetable notifications are now active.",
                     tag: "reminders-enabled"
                 });
+
+                checkPeriodReminders();
             } else {
                 alert("Notification permission was not allowed.");
             }
@@ -477,72 +479,253 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    if (Notification.permission === "granted") {
+    if (
+        "Notification" in window &&
+        Notification.permission === "granted"
+    ) {
         notificationButton.textContent =
             "🔔 Reminders enabled";
     }
 });
 
-function showMotivationGreeting(session) {
-    const messages = [
-        "Excellent work! You completed a powerful study session.",
-        "Amazing focus! Keep building that momentum.",
-        "Great job! Your hard work is paying off.",
-        "Long session completed! Be proud of your progress.",
-        "You stayed focused and finished strong!"
-    ];
+/* =========================================================
+   BROWSER REMINDERS
+   ========================================================= */
 
-    const randomMessage =
-        messages[Math.floor(Math.random() * messages.length)];
+const REMINDER_LOG_KEY = "alTimetableReminderLogV1";
 
-    // Remove an older popup
-    document.querySelector(".motivation-popup")?.remove();
-
-    const popup = document.createElement("div");
-    popup.className = "motivation-popup";
-
-    popup.innerHTML = `
-        <button class="motivation-close" type="button">×</button>
-
-        <div class="motivation-icon">🏆</div>
-
-        <div class="motivation-content">
-            <strong>Study goal completed!</strong>
-
-            <p>${randomMessage}</p>
-
-            <small>
-                ${escapeHtml(session.title)} ·
-                ${formatTime(session.start)}–${formatTime(session.end)}
-            </small>
-        </div>
-
-        <div class="motivation-progress"></div>
-    `;
-
-    document.body.appendChild(popup);
-
-    requestAnimationFrame(() => {
-        popup.classList.add("motivation-show");
-    });
-
-    popup
-        .querySelector(".motivation-close")
-        .addEventListener("click", () => {
-            closeMotivationPopup(popup);
-        });
-
-    // Automatically close after seven seconds
-    setTimeout(() => {
-        closeMotivationPopup(popup);
-    }, 7000);
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-function closeMotivationPopup(popup) {
-    if (!popup || !popup.isConnected) return;
+function sendBrowserNotification(title, body, tag) {
+  if (!("Notification" in window) || Notification.permission !== "granted") {
+    return;
+  }
 
-    popup.classList.remove("motivation-show");
-    popup.classList.add("motivation-hide");
+  try {
+    const notification = new Notification(title, { body, tag });
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+  } catch (error) {
+    console.error("Notification could not be displayed:", error);
+  }
+}
 
-    setTimeout(() => popup.remove(), 400);
-} 
+function checkPeriodReminders() {
+  if (!("Notification" in window) || Notification.permission !== "granted") {
+    return;
+  }
+
+  const now = new Date();
+  const todayIndex = (now.getDay() + 6) % 7;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const todayKey = localDateKey(now);
+  const reminderLog = safeParse(localStorage.getItem(REMINDER_LOG_KEY), {});
+  let logChanged = false;
+
+  sessions.forEach(session => {
+    if (Number(session.day) !== todayIndex) return;
+
+    const startMinutes = timeToMinutes(session.start);
+    const endMinutes = timeToMinutes(session.end);
+    const minutesUntilStart = startMinutes - currentMinutes;
+    const startKey = `${todayKey}:starting:${session.id}`;
+    const missedKey = `${todayKey}:missed:${session.id}`;
+
+    if (minutesUntilStart > 0 && minutesUntilStart <= 5 && !reminderLog[startKey]) {
+      sendBrowserNotification(
+        "Period starting soon",
+        `${session.title} starts in ${minutesUntilStart} minute${minutesUntilStart === 1 ? "" : "s"}.`,
+        startKey
+      );
+      reminderLog[startKey] = true;
+      logChanged = true;
+    }
+
+    if (currentMinutes > endMinutes && !session.completed && !reminderLog[missedKey]) {
+      sendBrowserNotification(
+        "Period not completed",
+        `You did not mark “${session.title}” as completed.`,
+        missedKey
+      );
+      reminderLog[missedKey] = true;
+      logChanged = true;
+    }
+  });
+
+  if (logChanged) {
+    localStorage.setItem(REMINDER_LOG_KEY, JSON.stringify(reminderLog));
+  }
+}
+
+checkPeriodReminders();
+setInterval(checkPeriodReminders, 30000);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkPeriodReminders();
+});
+
+/* =========================================================
+   MOTIVATIONAL POPUP FOR PERIODS LONGER THAN TWO HOURS
+   Styling is applied here so no extra CSS is required.
+   ========================================================= */
+
+function showMotivationGreeting(session) {
+  const messages = [
+    "Excellent work! You completed a powerful study session.",
+    "Amazing focus! Keep building that momentum.",
+    "Great job! Your hard work is paying off.",
+    "Long session completed! Be proud of your progress.",
+    "You stayed focused and finished strong!"
+  ];
+
+  const message = messages[Math.floor(Math.random() * messages.length)];
+  document.querySelector(".motivation-popup")?.remove();
+
+  const popup = document.createElement("aside");
+  popup.className = "motivation-popup";
+  popup.setAttribute("role", "status");
+  popup.setAttribute("aria-live", "polite");
+
+  Object.assign(popup.style, {
+    position: "fixed",
+    right: "18px",
+    bottom: "38px",
+    zIndex: "2147483647",
+    width: "min(360px, calc(100vw - 28px))",
+    padding: "18px 42px 18px 18px",
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    color: "#ffffff",
+    background: "linear-gradient(135deg, rgba(20,43,72,.98), rgba(28,27,65,.98))",
+    border: "1px solid rgba(96,165,250,.4)",
+    borderRadius: "17px",
+    boxShadow: "0 20px 55px rgba(0,0,0,.55), 0 0 30px rgba(79,140,255,.18)",
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
+    overflow: "hidden",
+    fontFamily: "Inter, Arial, sans-serif",
+    boxSizing: "border-box"
+  });
+
+  const icon = document.createElement("div");
+  icon.textContent = "🏆";
+  Object.assign(icon.style, {
+    minWidth: "52px",
+    height: "52px",
+    display: "grid",
+    placeItems: "center",
+    borderRadius: "15px",
+    background: "linear-gradient(135deg, #fbbf24, #f97316)",
+    fontSize: "27px"
+  });
+
+  const content = document.createElement("div");
+  content.style.minWidth = "0";
+
+  const title = document.createElement("strong");
+  title.textContent = "Study goal completed!";
+  Object.assign(title.style, {
+    display: "block",
+    marginBottom: "5px",
+    color: "#93c5fd",
+    fontSize: "15px"
+  });
+
+  const description = document.createElement("p");
+  description.textContent = message;
+  Object.assign(description.style, {
+    margin: "0 0 6px",
+    color: "#f1f5f9",
+    fontSize: "13px",
+    lineHeight: "1.4"
+  });
+
+  const information = document.createElement("small");
+  information.textContent = `${session.title} · ${formatTime(session.start)}–${formatTime(session.end)}`;
+  Object.assign(information.style, {
+    display: "block",
+    color: "#94a3b8",
+    fontSize: "10px",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap"
+  });
+
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.textContent = "×";
+  closeButton.setAttribute("aria-label", "Close message");
+  Object.assign(closeButton.style, {
+    position: "absolute",
+    top: "7px",
+    right: "9px",
+    width: "27px",
+    height: "27px",
+    padding: "0",
+    border: "none",
+    borderRadius: "8px",
+    background: "rgba(255,255,255,.07)",
+    color: "#b7c5d9",
+    fontSize: "19px",
+    lineHeight: "27px",
+    cursor: "pointer"
+  });
+
+  const progress = document.createElement("div");
+  Object.assign(progress.style, {
+    position: "absolute",
+    left: "0",
+    bottom: "0",
+    width: "100%",
+    height: "3px",
+    background: "linear-gradient(90deg, #60a5fa, #a78bfa)",
+    transformOrigin: "left"
+  });
+
+  content.append(title, description, information);
+  popup.append(icon, content, closeButton, progress);
+  document.body.appendChild(popup);
+
+  popup.animate([
+    { opacity: 0, transform: "translateX(120%) scale(.85)" },
+    { opacity: 1, transform: "translateX(0) scale(1)" }
+  ], {
+    duration: 550,
+    easing: "cubic-bezier(.34,1.56,.64,1)",
+    fill: "forwards"
+  });
+
+  icon.animate([
+    { transform: "translateY(0) rotate(-4deg)" },
+    { transform: "translateY(-5px) rotate(4deg)" },
+    { transform: "translateY(0) rotate(-4deg)" }
+  ], { duration: 1100, iterations: Infinity });
+
+  progress.animate([
+    { transform: "scaleX(1)" },
+    { transform: "scaleX(0)" }
+  ], { duration: 7000, easing: "linear", fill: "forwards" });
+
+  let closeTimer = setTimeout(closePopup, 7000);
+
+  closeButton.addEventListener("click", () => {
+    clearTimeout(closeTimer);
+    closePopup();
+  });
+
+  function closePopup() {
+    if (!popup.isConnected) return;
+    const animation = popup.animate([
+      { opacity: 1, transform: "translateX(0) scale(1)" },
+      { opacity: 0, transform: "translateX(120%) scale(.9)" }
+    ], { duration: 400, easing: "ease-in", fill: "forwards" });
+    animation.onfinish = () => popup.remove();
+  }
+}
