@@ -495,9 +495,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-/* =========================================================
-   BROWSER REMINDERS
-   ========================================================= */
 
 const REMINDER_LOG_KEY = "alTimetableReminderLogV1";
 
@@ -577,10 +574,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") checkPeriodReminders();
 });
 
-/* =========================================================
-   MOTIVATIONAL POPUP FOR PERIODS LONGER THAN TWO HOURS
-   Styling is applied here so no extra CSS is required.
-   ========================================================= */
+
 
 function showMotivationGreeting(session) {
   const messages = [
@@ -737,11 +731,6 @@ function showMotivationGreeting(session) {
   }
 }
 
-/* =========================================================
-   STUDY GARDEN
-   Each user's tree growth is calculated from their own periods.
-   No extra HTML or CSS files are needed for this feature.
-   ========================================================= */
 
 function getGrowthStage(percent, hasPeriods = true) {
   if (!hasPeriods) return { icon: "🌰", name: "Rest day", color: "#94a3b8" };
@@ -1062,9 +1051,7 @@ function addGardenWeather(panel) {
     ], { duration: 1300 + Math.random() * 900, delay: Math.random() * 1200, iterations: Infinity, easing: "linear" });
   }
 }
-/* =========================================================
-   GARDEN PATROL — random funny animation every 15 minutes
-   ========================================================= */
+
 
 const GARDEN_SCENE_DELAY = 15 * 60 * 1000;
 let lastGardenScene = -1;
