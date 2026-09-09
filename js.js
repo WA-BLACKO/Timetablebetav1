@@ -1062,4 +1062,407 @@ function addGardenWeather(panel) {
     ], { duration: 1300 + Math.random() * 900, delay: Math.random() * 1200, iterations: Infinity, easing: "linear" });
   }
 }
+/* =========================================================
+   GARDEN PATROL — random funny animation every 15 minutes
+   ========================================================= */
+
+const GARDEN_SCENE_DELAY = 15 * 60 * 1000;
+let lastGardenScene = -1;
+
+function animateActor(element, frames, duration = 1200, options = {}) {
+    return element.animate(frames, {
+        duration,
+        easing: "ease-in-out",
+        fill: "forwards",
+        ...options
+    });
+}
+
+function createGardenActor(icon, styles = {}) {
+    const actor = document.createElement("span");
+    actor.textContent = icon;
+
+    Object.assign(actor.style, {
+        position: "absolute",
+        fontSize: "30px",
+        zIndex: "2",
+        userSelect: "none",
+        ...styles
+    });
+
+    return actor;
+}
+
+function playRandomGardenScene() {
+    if (document.hidden) return;
+
+    let sceneIndex;
+
+    do {
+        sceneIndex = Math.floor(Math.random() * 15);
+    } while (sceneIndex === lastGardenScene);
+
+    lastGardenScene = sceneIndex;
+
+    document.querySelector(".garden-patrol-scene")?.remove();
+
+    const scene = document.createElement("div");
+    scene.className = "garden-patrol-scene";
+
+    Object.assign(scene.style, {
+        position: "fixed",
+        right: "20px",
+        bottom: "118px",
+        width: "280px",
+        height: "155px",
+        zIndex: "9997",
+        overflow: "hidden",
+        pointerEvents: "none",
+        borderRadius: "20px",
+        border: "1px solid rgba(134, 239, 172, 0.25)",
+        background:
+            "linear-gradient(180deg, rgba(30,85,100,0.92), rgba(12,47,43,0.96))",
+        boxShadow: "0 18px 45px rgba(0,0,0,0.36)",
+        fontFamily: "Arial, sans-serif"
+    });
+
+    const title = document.createElement("div");
+    title.textContent = "Garden Patrol";
+    Object.assign(title.style, {
+        position: "absolute",
+        top: "10px",
+        left: "13px",
+        zIndex: "5",
+        color: "#dcfce7",
+        fontSize: "11px",
+        fontWeight: "800",
+        letterSpacing: "1px",
+        textTransform: "uppercase"
+    });
+
+    const ground = document.createElement("div");
+    Object.assign(ground.style, {
+        position: "absolute",
+        left: "0",
+        right: "0",
+        bottom: "0",
+        height: "42px",
+        background:
+            "linear-gradient(180deg, #397d4f, #1e513a)",
+        borderTop: "1px solid rgba(190, 242, 100, 0.25)"
+    });
+
+    const tree = createGardenActor("🌳", {
+        left: "18px",
+        bottom: "18px",
+        fontSize: "66px",
+        zIndex: "3"
+    });
+
+    const botOne = createGardenActor("🤖", {
+        left: "105px",
+        bottom: "20px"
+    });
+
+    const botTwo = createGardenActor("🤖", {
+        left: "140px",
+        bottom: "20px",
+        fontSize: "25px"
+    });
+
+    const troublemaker = createGardenActor("🐛", {
+        right: "26px",
+        bottom: "21px",
+        fontSize: "32px"
+    });
+
+    scene.append(title, ground, tree, botOne, botTwo, troublemaker);
+    document.body.appendChild(scene);
+
+    const scenes = [
+        () => {
+            title.textContent = "Patrol chase!";
+            animateActor(botOne, [
+                { transform: "translateX(0)" },
+                { transform: "translateX(115px)" }
+            ], 1700);
+
+            animateActor(troublemaker, [
+                { transform: "translateX(0)" },
+                { transform: "translateX(90px)" }
+            ], 1700);
+        },
+
+        () => {
+            title.textContent = "Oops! Bot slipped!";
+            animateActor(botOne, [
+                { transform: "rotate(0deg)" },
+                { transform: "translateY(28px) rotate(115deg)" },
+                { transform: "translateY(28px) rotate(90deg)" }
+            ], 1200);
+        },
+
+        () => {
+            title.textContent = "The bug slipped!";
+            animateActor(troublemaker, [
+                { transform: "rotate(0deg)" },
+                { transform: "translateX(-28px) translateY(28px) rotate(-150deg)" }
+            ], 1100);
+        },
+
+        () => {
+            title.textContent = "Leaf net deployed!";
+            const net = createGardenActor("🥅", {
+                left: "150px",
+                bottom: "18px",
+                fontSize: "35px"
+            });
+
+            scene.appendChild(net);
+
+            animateActor(net, [
+                { transform: "scale(0.2)", opacity: 0 },
+                { transform: "scale(1)", opacity: 1 }
+            ], 500);
+
+            animateActor(troublemaker, [
+                { transform: "translateY(0)" },
+                { transform: "translateY(-55px) translateX(35px)" }
+            ], 1100);
+        },
+
+        () => {
+            title.textContent = "Balloon escape!";
+            const balloon = createGardenActor("🎈", {
+                right: "18px",
+                bottom: "44px",
+                fontSize: "32px"
+            });
+
+            scene.appendChild(balloon);
+
+            animateActor(troublemaker, [
+                { transform: "translate(0,0)" },
+                { transform: "translate(-160px,-130px)" }
+            ], 1800);
+
+            animateActor(balloon, [
+                { transform: "translate(0,0)" },
+                { transform: "translate(-160px,-130px)" }
+            ], 1800);
+        },
+
+        () => {
+            title.textContent = "Rain dance!";
+            const cloud = createGardenActor("☁️", {
+                left: "95px",
+                top: "25px",
+                fontSize: "42px"
+            });
+
+            const rain = createGardenActor("💧💧💧", {
+                left: "104px",
+                top: "62px",
+                fontSize: "16px"
+            });
+
+            scene.append(cloud, rain);
+
+            animateActor(botOne, [
+                { transform: "translateY(0) rotate(-12deg)" },
+                { transform: "translateY(-13px) rotate(12deg)" },
+                { transform: "translateY(0) rotate(-12deg)" }
+            ], 800, { iterations: 3 });
+
+            animateActor(botTwo, [
+                { transform: "translateY(0) rotate(12deg)" },
+                { transform: "translateY(-10px) rotate(-12deg)" },
+                { transform: "translateY(0) rotate(12deg)" }
+            ], 800, { iterations: 3 });
+        },
+
+        () => {
+            title.textContent = "Tree got a drink!";
+            const cloud = createGardenActor("☁️", {
+                left: "18px",
+                top: "13px",
+                fontSize: "38px"
+            });
+
+            const water = createGardenActor("💦", {
+                left: "39px",
+                top: "51px",
+                fontSize: "22px"
+            });
+
+            scene.append(cloud, water);
+
+            animateActor(tree, [
+                { transform: "scale(1)" },
+                { transform: "scale(1.18)" },
+                { transform: "scale(1)" }
+            ], 1400);
+        },
+
+        () => {
+            title.textContent = "Wrong target, bot!";
+            const wateringCan = createGardenActor("🚿", {
+                left: "95px",
+                bottom: "50px",
+                fontSize: "27px"
+            });
+
+            scene.appendChild(wateringCan);
+
+            animateActor(botOne, [
+                { transform: "rotate(0deg)" },
+                { transform: "rotate(18deg)" },
+                { transform: "rotate(0deg)" }
+            ], 1100);
+        },
+
+        () => {
+            title.textContent = "Leaf surprise!";
+            const leaf = createGardenActor("🍃", {
+                left: "45px",
+                top: "24px",
+                fontSize: "27px"
+            });
+
+            scene.appendChild(leaf);
+
+            animateActor(leaf, [
+                { transform: "translate(0,0) rotate(0deg)" },
+                { transform: "translate(160px,95px) rotate(260deg)" }
+            ], 1300);
+
+            animateActor(troublemaker, [
+                { transform: "translateX(0)" },
+                { transform: "translateX(22px) rotate(25deg)" }
+            ], 1300);
+        },
+
+        () => {
+            title.textContent = "Bot bump!";
+            animateActor(botOne, [
+                { transform: "translateX(0)" },
+                { transform: "translateX(30px)" },
+                { transform: "translateX(0)" }
+            ], 900);
+
+            animateActor(botTwo, [
+                { transform: "translateX(0)" },
+                { transform: "translateX(-25px)" },
+                { transform: "translateX(0)" }
+            ], 900);
+        },
+
+        () => {
+            title.textContent = "Is that a flower?";
+            troublemaker.textContent = "🌻";
+
+            setTimeout(() => {
+                troublemaker.textContent = "🐛";
+
+                animateActor(troublemaker, [
+                    { transform: "scale(1)" },
+                    { transform: "scale(1.35)" },
+                    { transform: "scale(1)" }
+                ], 700);
+            }, 1400);
+        },
+
+        () => {
+            title.textContent = "Butterfly distraction!";
+            const butterfly = createGardenActor("🦋", {
+                left: "120px",
+                top: "38px",
+                fontSize: "25px"
+            });
+
+            scene.appendChild(butterfly);
+
+            animateActor(butterfly, [
+                { transform: "translate(0,0)" },
+                { transform: "translate(110px,-25px)" },
+                { transform: "translate(55px,20px)" }
+            ], 1800);
+
+            animateActor(botTwo, [
+                { transform: "translateX(0)" },
+                { transform: "translateX(80px)" }
+            ], 1800);
+        },
+
+        () => {
+            title.textContent = "Fence repair!";
+            const fence = createGardenActor("🪵", {
+                left: "72px",
+                bottom: "24px",
+                fontSize: "32px"
+            });
+
+            scene.appendChild(fence);
+
+            animateActor(botOne, [
+                { transform: "rotate(0deg)" },
+                { transform: "rotate(-15deg)" },
+                { transform: "rotate(0deg)" }
+            ], 600, { iterations: 3 });
+        },
+
+        () => {
+            title.textContent = "Flower power!";
+            const flowers = createGardenActor("🌸🌼", {
+                left: "30px",
+                bottom: "70px",
+                fontSize: "22px"
+            });
+
+            scene.appendChild(flowers);
+
+            animateActor(flowers, [
+                { opacity: 0, transform: "translateY(20px) scale(0.2)" },
+                { opacity: 1, transform: "translateY(-20px) scale(1.2)" },
+                { opacity: 1, transform: "translateY(-10px) scale(1)" }
+            ], 1500);
+        },
+
+        () => {
+            title.textContent = "Garden celebration!";
+            [botOne, botTwo, troublemaker].forEach((actor, index) => {
+                animateActor(actor, [
+                    { transform: "translateY(0) rotate(-10deg)" },
+                    { transform: "translateY(-20px) rotate(10deg)" },
+                    { transform: "translateY(0) rotate(-10deg)" }
+                ], 700 + index * 80, { iterations: 3 });
+            });
+
+            animateActor(tree, [
+                { filter: "drop-shadow(0 0 0 rgba(190,242,100,0))" },
+                { filter: "drop-shadow(0 0 18px rgba(190,242,100,1))" },
+                { filter: "drop-shadow(0 0 0 rgba(190,242,100,0))" }
+            ], 1800);
+        }
+    ];
+
+    scenes[sceneIndex]();
+
+    animateActor(scene, [
+        { opacity: 0, transform: "translateY(20px) scale(0.92)" },
+        { opacity: 1, transform: "translateY(0) scale(1)" }
+    ], 450);
+
+    setTimeout(() => {
+        const closingAnimation = animateActor(scene, [
+            { opacity: 1, transform: "translateY(0) scale(1)" },
+            { opacity: 0, transform: "translateY(20px) scale(0.92)" }
+        ], 450);
+
+        closingAnimation.onfinish = () => scene.remove();
+    }, 11000);
+}
+
+// First scene after 15 minutes, then every 15 minutes
+setInterval(playRandomGardenScene, GARDEN_SCENE_DELAY);
  
