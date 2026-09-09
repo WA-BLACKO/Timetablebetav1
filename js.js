@@ -281,12 +281,18 @@ function renderSessions() {
       event.stopPropagation();
       item.completed = !item.completed;
 
-const periodDuration =
+      const periodDuration =
     timeToMinutes(item.end) - timeToMinutes(item.start);
 
 if (item.completed && periodDuration > 120) {
     showMotivationGreeting(item);
 }
+
+      if (item.completed) {
+        playGardenGrowthAura();
+      } else {
+        showFallingLeaves();
+      }
 
 saveAll();
 renderSessions();
@@ -386,6 +392,7 @@ function updateStats() {
   $("#completedPeriods").textContent = completed;
   $("#progressPercent").textContent = `${percent}%`;
   $("#progressBar").style.width = `${percent}%`;
+  updateStudyGarden();
 }
 
 function resetCompletion() {
@@ -729,3 +736,330 @@ function showMotivationGreeting(session) {
     animation.onfinish = () => popup.remove();
   }
 }
+
+/* =========================================================
+   STUDY GARDEN
+   Each user's tree growth is calculated from their own periods.
+   No extra HTML or CSS files are needed for this feature.
+   ========================================================= */
+
+function getGrowthStage(percent, hasPeriods = true) {
+  if (!hasPeriods) return { icon: "🌰", name: "Rest day", color: "#94a3b8" };
+  if (percent === 0) return { icon: "🌰", name: "Seed", color: "#b68a5a" };
+  if (percent <= 20) return { icon: "🌱", name: "Sprout", color: "#86efac" };
+  if (percent <= 40) return { icon: "🪴", name: "Small plant", color: "#4ade80" };
+  if (percent <= 60) return { icon: "🌿", name: "Young plant", color: "#34d399" };
+  if (percent <= 80) return { icon: "🌳", name: "Growing tree", color: "#22c55e" };
+  if (percent < 100) return { icon: "🌲", name: "Healthy tree", color: "#16a34a" };
+  return { icon: "🌳", name: "Full tree", color: "#bef264" };
+}
+
+function getDayGardenSummary(dayIndex) {
+  const periods = sessions.filter(session => Number(session.day) === dayIndex);
+  const completed = periods.filter(session => session.completed).length;
+  const total = periods.length;
+  const percent = total ? Math.round((completed / total) * 100) : 0;
+  return { dayIndex, total, completed, percent, stage: getGrowthStage(percent, total > 0) };
+}
+
+function getWeekGardenSummary() {
+  const total = sessions.length;
+  const completed = sessions.filter(session => session.completed).length;
+  const percent = total ? Math.round((completed / total) * 100) : 0;
+  const daily = DAYS.map((_, index) => getDayGardenSummary(index));
+  const activeDays = daily.filter(day => day.total > 0);
+  const strongest = activeDays.length
+    ? activeDays.reduce((best, day) => day.percent > best.percent ? day : best)
+    : null;
+  return { total, completed, percent, daily, strongest, stage: getGrowthStage(percent, total > 0) };
+}
+
+function createGardenButton() {
+  let button = document.getElementById("studyGardenButton");
+  if (button) return button;
+
+  button = document.createElement("button");
+  button.id = "studyGardenButton";
+  button.type = "button";
+  button.title = "Open My Study Garden";
+  button.setAttribute("aria-label", "Open My Study Garden");
+
+  Object.assign(button.style, {
+    position: "fixed",
+    right: "18px",
+    bottom: "38px",
+    zIndex: "9998",
+    width: "68px",
+    height: "68px",
+    padding: "0",
+    border: "1px solid rgba(134,239,172,.45)",
+    borderRadius: "22px",
+    background: "linear-gradient(145deg, rgba(19,68,50,.97), rgba(10,36,39,.98))",
+    boxShadow: "0 16px 35px rgba(0,0,0,.36)",
+    color: "#ffffff",
+    cursor: "pointer",
+    display: "grid",
+    placeItems: "center",
+    fontFamily: "Inter, Arial, sans-serif",
+    overflow: "hidden"
+  });
+
+  button.addEventListener("mouseenter", () => {
+    button.style.transform = "translateY(-3px) scale(1.04)";
+  });
+  button.addEventListener("mouseleave", () => {
+    button.style.transform = "translateY(0) scale(1)";
+  });
+  button.addEventListener("click", openStudyGarden);
+
+  document.body.appendChild(button);
+  return button;
+}
+
+function updateStudyGarden() {
+  if (!profile || !Array.isArray(sessions)) return;
+
+  const button = createGardenButton();
+  const summary = getWeekGardenSummary();
+  const icon = summary.stage.icon;
+
+  button.innerHTML = `
+    <span style="font-size:31px; line-height:1; filter:drop-shadow(0 4px 6px rgba(0,0,0,.32));">${icon}</span>
+    <span style="position:absolute; right:5px; bottom:5px; min-width:24px; padding:2px 4px; border-radius:8px; background:rgba(0,0,0,.42); color:#d9ffe9; font-size:9px; font-weight:800;">${summary.percent}%</span>
+  `;
+  button.title = `My Study Garden — ${summary.percent}% weekly growth`;
+}
+
+function playGardenGrowthAura() {
+  const button = document.getElementById("studyGardenButton");
+  if (!button) return;
+
+  button.animate([
+    { boxShadow: "0 16px 35px rgba(0,0,0,.36), 0 0 0 0 rgba(74,222,128,0)" },
+    { boxShadow: "0 16px 35px rgba(0,0,0,.36), 0 0 0 15px rgba(74,222,128,.34), 0 0 42px rgba(74,222,128,.9)" },
+    { boxShadow: "0 16px 35px rgba(0,0,0,.36), 0 0 0 24px rgba(74,222,128,0)" }
+  ], { duration: 900, easing: "ease-out" });
+
+  button.animate([
+    { transform: "scale(1) rotate(0deg)" },
+    { transform: "scale(1.16) rotate(-5deg)" },
+    { transform: "scale(1) rotate(0deg)" }
+  ], { duration: 700, easing: "cubic-bezier(.34,1.56,.64,1)" });
+}
+
+function showFallingLeaves() {
+  const button = document.getElementById("studyGardenButton");
+  if (!button) return;
+  const buttonBox = button.getBoundingClientRect();
+
+  for (let index = 0; index < 7; index++) {
+    const leaf = document.createElement("span");
+    leaf.textContent = index % 2 ? "🍂" : "🍃";
+    Object.assign(leaf.style, {
+      position: "fixed",
+      left: `${buttonBox.left + 18 + Math.random() * 30}px`,
+      top: `${buttonBox.top + 20}px`,
+      zIndex: "10001",
+      fontSize: `${12 + Math.random() * 8}px`,
+      pointerEvents: "none"
+    });
+    document.body.appendChild(leaf);
+
+    const drift = (Math.random() - .5) * 130;
+    const animation = leaf.animate([
+      { opacity: 1, transform: "translate(0,0) rotate(0deg)" },
+      { opacity: 0, transform: `translate(${drift}px, ${95 + Math.random() * 65}px) rotate(${150 + Math.random() * 240}deg)` }
+    ], { duration: 950 + Math.random() * 450, easing: "cubic-bezier(.2,.7,.3,1)" });
+    animation.onfinish = () => leaf.remove();
+  }
+}
+
+function openStudyGarden() {
+  document.getElementById("studyGardenWorkspace")?.remove();
+  const summary = getWeekGardenSummary();
+
+  const overlay = document.createElement("div");
+  overlay.id = "studyGardenWorkspace";
+  Object.assign(overlay.style, {
+    position: "fixed",
+    inset: "0",
+    zIndex: "10010",
+    display: "grid",
+    placeItems: "center",
+    padding: "18px",
+    overflowY: "auto",
+    background: "rgba(2,10,17,.72)",
+    backdropFilter: "blur(11px)",
+    WebkitBackdropFilter: "blur(11px)",
+    fontFamily: "Inter, Arial, sans-serif"
+  });
+
+  const panel = document.createElement("section");
+  Object.assign(panel.style, {
+    position: "relative",
+    width: "min(1080px, 100%)",
+    maxHeight: "calc(100vh - 36px)",
+    overflowY: "auto",
+    padding: "clamp(20px, 4vw, 38px)",
+    border: "1px solid rgba(167,243,208,.22)",
+    borderRadius: "27px",
+    background: "linear-gradient(145deg, #102f32 0%, #0b1f2c 52%, #111c36 100%)",
+    boxShadow: "0 34px 100px rgba(0,0,0,.55)",
+    color: "#f4fff8",
+    overflow: "hidden"
+  });
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.textContent = "×";
+  close.setAttribute("aria-label", "Close Study Garden");
+  Object.assign(close.style, {
+    position: "absolute",
+    top: "16px",
+    right: "18px",
+    zIndex: "3",
+    width: "38px",
+    height: "38px",
+    border: "1px solid rgba(255,255,255,.14)",
+    borderRadius: "12px",
+    background: "rgba(255,255,255,.07)",
+    color: "#ffffff",
+    fontSize: "24px",
+    cursor: "pointer"
+  });
+  close.addEventListener("click", () => overlay.remove());
+  overlay.addEventListener("click", event => {
+    if (event.target === overlay) overlay.remove();
+  });
+
+  const header = document.createElement("div");
+  header.innerHTML = `
+    <p style="margin:0 0 7px; color:#86efac; font-size:11px; font-weight:800; letter-spacing:.16em;">MY STUDY GARDEN</p>
+    <h2 style="margin:0; font-size:clamp(25px,4vw,38px); letter-spacing:-.04em;">Your week is growing</h2>
+    <p style="max-width:610px; margin:10px 0 0; color:#b7cec8; line-height:1.55;">Every tree grows from your own planned periods. Complete a period to nourish your garden.</p>
+  `;
+
+  const summaryCard = document.createElement("div");
+  Object.assign(summaryCard.style, {
+    margin: "25px 0 20px",
+    padding: "18px",
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+    border: "1px solid rgba(134,239,172,.2)",
+    borderRadius: "18px",
+    background: "rgba(4,25,29,.42)"
+  });
+  summaryCard.innerHTML = `
+    <div style="font-size:48px; line-height:1;">${summary.stage.icon}</div>
+    <div style="flex:1;">
+      <strong style="display:block; font-size:17px; color:${summary.stage.color};">${summary.stage.name}</strong>
+      <span style="display:block; margin-top:4px; color:#c3d7d0; font-size:13px;">${summary.completed} of ${summary.total} planned periods completed</span>
+      <div style="height:8px; margin-top:12px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.09);"><span style="display:block; width:${summary.percent}%; height:100%; border-radius:inherit; background:linear-gradient(90deg,#4ade80,#bef264);"></span></div>
+    </div>
+    <strong style="font-size:26px; color:#dcfce7;">${summary.percent}%</strong>
+  `;
+
+  const grid = document.createElement("div");
+  Object.assign(grid.style, {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+    gap: "12px"
+  });
+
+  summary.daily.forEach(day => {
+    const tree = document.createElement("article");
+    Object.assign(tree.style, {
+      minHeight: "176px",
+      padding: "16px",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      border: "1px solid rgba(255,255,255,.1)",
+      borderRadius: "17px",
+      background: "linear-gradient(160deg, rgba(21,70,55,.52), rgba(15,35,50,.62))",
+      overflow: "hidden"
+    });
+
+    const treeIcon = document.createElement("div");
+    treeIcon.textContent = day.stage.icon;
+    Object.assign(treeIcon.style, {
+      fontSize: `${40 + Math.round(day.percent * .32)}px`,
+      lineHeight: "1",
+      alignSelf: "center",
+      filter: "drop-shadow(0 8px 10px rgba(0,0,0,.25))"
+    });
+    treeIcon.animate([
+      { transform: "rotate(-2deg) translateY(0)" },
+      { transform: "rotate(3deg) translateY(-3px)" },
+      { transform: "rotate(-2deg) translateY(0)" }
+    ], { duration: 2500 + day.dayIndex * 110, iterations: Infinity, easing: "ease-in-out" });
+
+    const label = document.createElement("div");
+    label.innerHTML = `
+      <strong style="display:block; font-size:14px;">${DAYS[day.dayIndex]}</strong>
+      <span style="display:block; margin-top:3px; color:${day.stage.color}; font-size:12px;">${day.stage.name} · ${day.percent}%</span>
+      <small style="display:block; margin-top:6px; color:#a7c0ba; font-size:11px;">${day.completed}/${day.total} periods completed</small>
+    `;
+
+    tree.append(treeIcon, label);
+    grid.appendChild(tree);
+  });
+
+  const report = document.createElement("section");
+  Object.assign(report.style, {
+    marginTop: "20px",
+    padding: "18px",
+    border: "1px solid rgba(147,197,253,.22)",
+    borderRadius: "18px",
+    background: "rgba(18,31,65,.45)"
+  });
+  report.innerHTML = `
+    <p style="margin:0 0 6px; color:#93c5fd; font-size:11px; font-weight:800; letter-spacing:.15em;">WEEKLY REPORT</p>
+    <h3 style="margin:0; font-size:19px;">${summary.percent === 100 && summary.total ? "Full garden achieved!" : "Your current weekly progress"}</h3>
+    <p style="margin:8px 0 0; color:#bfd0de; line-height:1.55; font-size:13px;">${summary.strongest ? `${DAYS[summary.strongest.dayIndex]} is your strongest day at ${summary.strongest.percent}% completion.` : "Add periods to your timetable to begin growing your garden."}</p>
+  `;
+
+  panel.append(close, header, summaryCard, grid, report);
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  addGardenWeather(panel);
+}
+
+function addGardenWeather(panel) {
+  const cloud = document.createElement("span");
+  cloud.textContent = "☁️";
+  Object.assign(cloud.style, {
+    position: "absolute",
+    top: "72px",
+    left: "-45px",
+    opacity: ".25",
+    fontSize: "42px",
+    pointerEvents: "none"
+  });
+  panel.appendChild(cloud);
+  cloud.animate([
+    { transform: "translateX(0)" },
+    { transform: "translateX(1150px)" }
+  ], { duration: 18000, iterations: Infinity, easing: "linear" });
+
+  for (let index = 0; index < 12; index++) {
+    const rain = document.createElement("span");
+    rain.textContent = "│";
+    Object.assign(rain.style, {
+      position: "absolute",
+      top: "84px",
+      left: `${Math.random() * 90 + 5}%`,
+      color: "rgba(125,211,252,.48)",
+      fontSize: "15px",
+      pointerEvents: "none"
+    });
+    panel.appendChild(rain);
+    rain.animate([
+      { opacity: 0, transform: "translateY(0)" },
+      { opacity: .8, transform: "translateY(35px)" },
+      { opacity: 0, transform: "translateY(64px)" }
+    ], { duration: 1300 + Math.random() * 900, delay: Math.random() * 1200, iterations: Infinity, easing: "linear" });
+  }
+}
+ 
