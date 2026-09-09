@@ -1463,6 +1463,8 @@ function playRandomGardenScene() {
     }, 11000);
 }
 
-// First scene after 15 minutes, then every 15 minutes
+
+setTimeout(playRandomGardenScene, 1200);
+
+
 setInterval(playRandomGardenScene, GARDEN_SCENE_DELAY);
- 
